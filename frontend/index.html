@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Persona Chatbot</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #0f172a, #1e293b);
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .container {
+      width: 420px;
+      background: #111827;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+
+    h1 {
+      text-align: center;
+      margin: 0;
+      font-size: 22px;
+    }
+
+    .subtitle {
+      text-align: center;
+      font-size: 12px;
+      color: #9ca3af;
+      margin-bottom: 15px;
+    }
+
+    select, input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 8px;
+      border: none;
+      outline: none;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 10px;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      background: #3b82f6;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      background: #6b7280;
+      cursor: not-allowed;
+    }
+
+    button:hover:not(:disabled) {
+      background: #2563eb;
+    }
+
+    .chat-box {
+      height: 260px;
+      overflow-y: auto;
+      margin-top: 15px;
+      background: #1f2937;
+      padding: 10px;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .msg {
+      margin: 8px 0;
+      padding: 8px;
+      border-radius: 8px;
+      max-width: 80%;
+      word-wrap: break-word;
+    }
+
+    .user {
+      background: #3b82f6;
+      margin-left: auto;
+    }
+
+    .bot {
+      background: #374151;
+    }
+
+    #suggestions {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+
+    #suggestions button {
+      background: #374151;
+      border: none;
+      padding: 6px 10px;
+      border-radius: 20px;
+      color: white;
+      cursor: pointer;
+      font-size: 12px;
+      width: auto;
+    }
+
+    #suggestions button:hover {
+      background: #4b5563;
+    }
+
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+    <h1>AI Persona Chatbot</h1>
+    <p class="subtitle">Talk to Kshitij, Anshuman, or Abhimanyu</p>
+
+    <select id="persona">
+      <option value="kshitij">Kshitij</option>
+      <option value="anshuman">Anshuman</option>
+      <option value="abhimanyu">Abhimanyu</option>
+    </select>
+
+    <div id="suggestions">
+      <button onclick="quickSend('I am weak in DSA')">DSA Help</button>
+      <button onclick="quickSend('I feel lost in coding')">Feeling Lost</button>
+      <button onclick="quickSend('How to get a job?')">Career</button>
+    </div>
+
+    <div class="chat-box" id="chatBox"></div>
+
+    <input id="input" placeholder="Ask something..." />
+    <button id="sendBtn" onclick="send()">Send</button>
+  </div>
+
+  <script>
+    let messages = []
+
+    async function send() {
+      const message = document.getElementById("input").value
+      const persona = document.getElementById("persona").value
+      const btn = document.getElementById("sendBtn")
+
+      if (!message) return
+
+      addMessage(message, "user")
+      messages.push({ role: "user", content: message })
+
+      document.getElementById("input").value = ""
+      btn.disabled = true
+
+      const thinkingEl = addMessage("Thinking...", "bot")
+
+      try {
+        const res = await fetch("http://localhost:3000/chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ messages, persona })
+        })
+
+        const data = await res.json()
+        thinkingEl.innerText = data.reply
+
+        messages.push({ role: "assistant", content: data.reply })
+
+      } catch (err) {
+        thinkingEl.innerText = "Error connecting to server"
+      }
+
+      btn.disabled = false
+    }
+
+    function addMessage(text, type) {
+      const chatBox = document.getElementById("chatBox")
+      const msg = document.createElement("div")
+
+      msg.className = "msg " + type
+      msg.innerText = text
+
+      chatBox.appendChild(msg)
+      chatBox.scrollTop = chatBox.scrollHeight
+
+      return msg
+    }
+
+    function quickSend(text) {
+      document.getElementById("input").value = text
+      send()
+    }
+
+    document.getElementById("input").addEventListener("keypress", function(e) {
+      if (e.key === "Enter") send()
+    })
+
+    // reset on persona change
+    document.getElementById("persona").addEventListener("change", () => {
+      messages = []
+      document.getElementById("chatBox").innerHTML = ""
+    })
+  </script>
+
+</body>
+</html>
